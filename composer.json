@@ -1,0 +1,48 @@
+{
+    "name": "ekumanov/flarum-ext-auto-promote",
+    "description": "Promotes members to a trusted group once they have N approved posts, and lets staff hold suspected spam accounts back with a private watchlist.",
+    "keywords": [
+        "flarum",
+        "extension",
+        "moderation",
+        "spam",
+        "groups",
+        "promotion"
+    ],
+    "type": "flarum-extension",
+    "license": "MIT",
+    "require": {
+        "flarum/core": "^2.0@beta",
+        "php": "^8.3"
+    },
+    "authors": [
+        {
+            "name": "ekumanov",
+            "email": "ekumanov@users.noreply.github.com"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "Ekumanov\\AutoPromote\\": "src/"
+        }
+    },
+    "extra": {
+        "flarum-extension": {
+            "title": "Auto Promote",
+            "category": "moderation",
+            "icon": {
+                "name": "fas fa-user-check",
+                "backgroundColor": "#4B7BA8",
+                "color": "#fff"
+            },
+            "optional-dependencies": [
+                "flarum-approval"
+            ]
+        }
+    },
+    "suggest": {
+        "flarum/approval": "Lets promotion count only posts that a moderator has approved."
+    },
+    "minimum-stability": "beta",
+    "prefer-stable": true
+}

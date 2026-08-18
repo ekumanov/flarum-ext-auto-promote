@@ -1,0 +1,19 @@
+// The watchlist badge is only ever rendered for staff — the server does not
+// serialize the attribute to anyone else — so this styling is staff-facing.
+.Badge--ekumanov-watched {
+  // Nothing beyond the colour passed by the component; the rule exists so the
+  // badge can be targeted by a theme, and so custom CSS has a stable hook.
+  .Badge-icon {
+    font-size: 11px;
+  }
+}
+
+.WatchUserModal {
+  .helpText {
+    margin-bottom: 0;
+  }
+
+  textarea.FormControl {
+    resize: vertical;
+  }
+}
