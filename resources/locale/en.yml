@@ -41,7 +41,13 @@ ekumanov-auto-promote:
       required_posts_help: >
         How many visible, approved replies a member needs before they are promoted.
         Event posts such as "renamed the discussion" do not count.
-      min_account_age_label: Minimum account age (hours)
+      min_account_age_label: Waiting period (hours)
       min_account_age_help: >
-        How long an account must exist before it can be promoted, regardless of post
-        count. Set to 0 for no age requirement.
+        How long the member must wait before being promoted, on top of the post
+        count. Set to 0 for no waiting period.
+      age_from_post_label: Start the wait at the qualifying post
+      age_from_post_help: >
+        When on, the waiting period starts when the member makes the post that
+        completes their quota — so someone who registered a year ago but only posts
+        three times today still waits. When off, it counts from registration, which
+        that same account would already have satisfied.

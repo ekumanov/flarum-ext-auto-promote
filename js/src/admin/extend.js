@@ -30,6 +30,15 @@ export default [
     )
     .setting(
       () => ({
+        setting: 'ekumanov-auto-promote.age_from_qualifying_post',
+        label: app.translator.trans('ekumanov-auto-promote.admin.settings.age_from_post_label'),
+        help: app.translator.trans('ekumanov-auto-promote.admin.settings.age_from_post_help'),
+        type: 'boolean',
+      }),
+      5
+    )
+    .setting(
+      () => ({
         setting: 'ekumanov-auto-promote.min_account_age_hours',
         label: app.translator.trans('ekumanov-auto-promote.admin.settings.min_account_age_label'),
         help: app.translator.trans('ekumanov-auto-promote.admin.settings.min_account_age_help'),

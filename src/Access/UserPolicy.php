@@ -9,6 +9,7 @@
 
 namespace Ekumanov\AutoPromote\Access;
 
+use Flarum\Group\Group;
 use Flarum\User\Access\AbstractPolicy;
 use Flarum\User\User;
 
@@ -33,9 +34,13 @@ class UserPolicy extends AbstractPolicy
     protected function staffAction(User $actor, User $user): ?string
     {
         // An explicit deny outranks the administrator bypass in Gate, so these
-        // two hold for admins as well: nobody flags themselves, and an
-        // administrator account is never a promotion or watchlist target.
-        if ($actor->id === $user->id || $user->isAdmin()) {
+        // hold for admins as well: nobody flags themselves, and staff are never
+        // a promotion or watchlist target — they count as trusted by virtue of
+        // being staff, and auto-promotion does not touch them either.
+        $targetIsStaff = $user->isAdmin()
+            || $user->groups->contains('id', Group::MODERATOR_ID);
+
+        if ($actor->id === $user->id || $targetIsStaff) {
             return $this->deny();
         }
 
