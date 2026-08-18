@@ -4,6 +4,8 @@ ekumanov-auto-promote:
     user_controls:
       watch_button: Add to watchlist
       watch_help: Never auto-promote this account. Staff only — they are not told.
+      note_button: Watchlist note
+      note_help: Read or edit the note other staff can see for this account.
       unwatch_button: Remove from watchlist
       unwatch_help: Let this account be auto-promoted again once it qualifies.
       promote_button: "Promote to {group}"
@@ -12,11 +14,14 @@ ekumanov-auto-promote:
       promote_watched_help: Clears the watchlist flag and grants the trusted group now.
 
     badge:
-      tooltip: "Watchlist: added by {moderator} on {date}"
+      tooltip: "Watchlist · added by {moderator} · {date}"
+      tooltip_with_note: "Watchlist · added by {moderator} · {date} · note attached"
       unknown_moderator: a moderator
 
     watch_modal:
       title: "Add {username} to the watchlist"
+      edit_title: "Watchlist note for {username}"
+      added_by: "Added to the watchlist by {moderator} on {date}."
       explanation: >
         Watched accounts are never auto-promoted to the trusted group, however many
         posts they make. Use this for accounts you suspect are building up a post
@@ -25,6 +30,7 @@ ekumanov-auto-promote:
       reason_label: Note for other staff (optional)
       reason_placeholder: e.g. two generic posts then went quiet
       submit_button: Add to watchlist
+      save_button: Save note
 
   admin:
     permission:

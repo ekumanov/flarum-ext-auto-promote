@@ -4,6 +4,7 @@ import Model from 'flarum/common/Model';
 import User from 'flarum/common/models/User';
 import Badge from 'flarum/common/components/Badge';
 import Button from 'flarum/common/components/Button';
+import Tooltip from 'flarum/common/components/Tooltip';
 import UserControls from 'flarum/forum/utils/UserControls';
 import extractText from 'flarum/common/utils/extractText';
 import WatchUserModal from './components/WatchUserModal';
@@ -27,9 +28,18 @@ app.initializers.add('ekumanov-auto-promote', () => {
   extend(User.prototype, 'badges', function (items) {
     if (!this.isWatched()) return;
 
+    const label = watchTooltip(this);
+
     items.add(
       'ekumanov-watched',
-      <Badge type="ekumanov-watched" icon="fas fa-eye" color="#B8531B" label={watchTooltip(this)} />,
+      // Badge builds its own Tooltip when handed a `label`, but that one is
+      // rendered next to the trigger and so is clipped by any ancestor with
+      // `overflow: hidden` — which is exactly what a post header is, cutting
+      // the text off mid-word. Render the badge bare and anchor our own
+      // tooltip to <body> so it can escape the clip.
+      <Tooltip text={label} container="body">
+        <Badge type="ekumanov-watched" icon="fas fa-eye" color="#B8531B" aria-label={label} />
+      </Tooltip>,
       20
     );
   });
@@ -39,25 +49,40 @@ app.initializers.add('ekumanov-auto-promote', () => {
 
     const watched = !!user.isWatched();
 
+    // Explanations live in `title` rather than `helperText`: helperText renders
+    // a second line inside every menu item, which makes the dropdown far too
+    // tall on a phone.
     if (user.canWatchlist()) {
       if (watched) {
+        items.add(
+          'ekumanov-watch-note',
+          <Button
+            icon="fas fa-pencil-alt"
+            title={extractText(app.translator.trans('ekumanov-auto-promote.forum.user_controls.note_help'))}
+            onclick={() => app.modal.show(WatchUserModal, { user, editing: true })}
+          >
+            {app.translator.trans('ekumanov-auto-promote.forum.user_controls.note_button')}
+          </Button>,
+          -8
+        );
+
         items.add(
           'ekumanov-unwatch',
           <Button
             icon="fas fa-eye-slash"
-            helperText={app.translator.trans('ekumanov-auto-promote.forum.user_controls.unwatch_help')}
+            title={extractText(app.translator.trans('ekumanov-auto-promote.forum.user_controls.unwatch_help'))}
             onclick={() => unwatch(user)}
           >
             {app.translator.trans('ekumanov-auto-promote.forum.user_controls.unwatch_button')}
           </Button>,
-          -8
+          -9
         );
       } else {
         items.add(
           'ekumanov-watch',
           <Button
             icon="fas fa-eye"
-            helperText={app.translator.trans('ekumanov-auto-promote.forum.user_controls.watch_help')}
+            title={extractText(app.translator.trans('ekumanov-auto-promote.forum.user_controls.watch_help'))}
             onclick={() => app.modal.show(WatchUserModal, { user })}
           >
             {app.translator.trans('ekumanov-auto-promote.forum.user_controls.watch_button')}
@@ -68,16 +93,19 @@ app.initializers.add('ekumanov-auto-promote', () => {
     }
 
     // Offered to anyone not already trusted, watched or not — promoting a
-    // watched user is how you say "I looked, they're fine".
+    // watched user is how you say "I looked, they're fine". Staff report as
+    // trusted, so this never appears for them.
     if (user.canPromote() && !user.isRegular()) {
       items.add(
         'ekumanov-promote',
         <Button
           icon="fas fa-user-check"
-          helperText={app.translator.trans(
-            watched
-              ? 'ekumanov-auto-promote.forum.user_controls.promote_watched_help'
-              : 'ekumanov-auto-promote.forum.user_controls.promote_help'
+          title={extractText(
+            app.translator.trans(
+              watched
+                ? 'ekumanov-auto-promote.forum.user_controls.promote_watched_help'
+                : 'ekumanov-auto-promote.forum.user_controls.promote_help'
+            )
           )}
           onclick={() => promote(user)}
         >
@@ -87,27 +115,33 @@ app.initializers.add('ekumanov-auto-promote', () => {
               app.translator.trans('ekumanov-auto-promote.forum.user_controls.fallback_group_name'),
           })}
         </Button>,
-        -9
+        -10
       );
     }
   });
 });
 
+/**
+ * Deliberately short. The note can be a couple of sentences, and a tooltip is
+ * the wrong place to read those — it only says whether one exists, and the note
+ * itself lives in the modal behind "Watchlist note".
+ */
 function watchTooltip(user) {
   const by = user.watchedByUsername();
   const at = user.watchedAt();
-  const reason = user.watchReason();
 
-  const label = extractText(
-    app.translator.trans('ekumanov-auto-promote.forum.badge.tooltip', {
+  const key = user.watchReason()
+    ? 'ekumanov-auto-promote.forum.badge.tooltip_with_note'
+    : 'ekumanov-auto-promote.forum.badge.tooltip';
+
+  return extractText(
+    app.translator.trans(key, {
       // Deliberately not named `user`: the translator treats that key as a User
       // model and calls displayName() on it. This is a plain username string.
       moderator: by || extractText(app.translator.trans('ekumanov-auto-promote.forum.badge.unknown_moderator')),
       date: at ? formatDate(at) : '?',
     })
   );
-
-  return reason ? `${label} — ${reason}` : label;
 }
 
 /**

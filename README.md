@@ -50,15 +50,23 @@ On any user's profile or post controls, holders of the permission get:
 | Item | Shown when | Effect |
 |---|---|---|
 | **Add to watchlist** | user is not watched | Opens a note prompt. Flags the account and, if they were already trusted, removes the trusted group. |
+| **Watchlist note** | user is watched | Reads and edits the shared note. Editing keeps the original "added by" attribution. |
 | **Remove from watchlist** | user is watched | Clears the flag. Auto-promotion resumes next time they qualify. |
 | **Promote to \<group\>** | user is not yet trusted | Grants the trusted group immediately, clearing any watch flag. |
 
-Each item carries a one-line explanation underneath, so moderators do not have
-to be briefed separately on what the watchlist is for.
+Explanations are `title` tooltips rather than visible sub-labels, so the
+dropdown stays one line per item on a phone.
 
-Watched users show an eye badge whose tooltip records who flagged them, when,
-and the note — because in three months "why is this account flagged?" needs a
-better answer than somebody's memory.
+Watched users show an eye badge to staff. Its tooltip is deliberately short —
+who flagged them, when, and whether a note exists — because the note itself can
+run to a couple of sentences, which is the wrong shape for a tooltip. The note
+lives behind **Watchlist note**, where it can be read and edited: in three
+months "why is this account flagged?" needs a better answer than somebody's
+memory.
+
+The badge's tooltip is anchored to `<body>`. Inside a post header — an
+`overflow: hidden` context — a tooltip rendered next to its trigger gets clipped
+mid-word.
 
 Nobody can flag themselves, and administrator accounts are never a valid target
 (this holds for administrators too, not just moderators).
