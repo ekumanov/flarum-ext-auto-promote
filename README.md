@@ -68,8 +68,9 @@ The badge's tooltip is anchored to `<body>`. Inside a post header — an
 `overflow: hidden` context — a tooltip rendered next to its trigger gets clipped
 mid-word.
 
-Nobody can flag themselves, and administrator accounts are never a valid target
-(this holds for administrators too, not just moderators).
+Nobody can flag themselves, and staff accounts — administrators and moderators
+alike — are never a valid target. That holds for administrators acting too, not
+just moderators.
 
 ## Promotion rules
 
