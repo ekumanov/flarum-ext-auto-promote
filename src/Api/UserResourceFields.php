@@ -80,6 +80,14 @@ class UserResourceFields
                         $user->watched_at = null;
                         $user->watched_by_user_id = null;
                         $user->watch_reason = null;
+
+                        // Re-evaluate immediately. A member who was demoted when
+                        // they were flagged usually qualifies again the moment
+                        // the flag comes off, and without this they would sit
+                        // untrusted until the next scheduled sweep — up to
+                        // fifteen minutes in which the moderator who just
+                        // cleared the flag sees no change and assumes it failed.
+                        $user->afterSave(fn (User $user) => $this->promoter->maybeAutoPromote($user));
                     }
                 }),
 

@@ -51,7 +51,7 @@ On any user's profile or post controls, holders of the permission get:
 |---|---|---|
 | **Add to watchlist** | user is not watched | Opens a note prompt. Flags the account and, if they were already trusted, removes the trusted group. |
 | **Watchlist note** | user is watched | Reads and edits the shared note. Editing keeps the original "added by" attribution. |
-| **Remove from watchlist** | user is watched | Clears the flag. Auto-promotion resumes next time they qualify. |
+| **Remove from watchlist** | user is watched | Clears the flag and re-evaluates on the spot: if they still meet the rules, the trusted group comes straight back. |
 | **Promote to \<group\>** | user is not yet trusted | Grants the trusted group immediately, clearing any watch flag. |
 
 Explanations are `title` tooltips rather than visible sub-labels, so the
@@ -98,6 +98,18 @@ over without ever waiting for anything.
 
 Counting from the qualifying post means the delay is always actually served. Turn
 the setting off to get the older registration-based behaviour.
+
+### What a watchlist round trip does to a Regular
+
+Flagging a Regular removes the trusted group — a flag that left them trusted
+would be toothless. Clearing the flag re-runs the normal check immediately, so a
+member who genuinely qualifies gets the group back at once rather than waiting
+for the next sweep.
+
+One case is worth knowing: someone who only ever held the group because a
+moderator granted it *by hand*, before they met the rules, does not get it back
+automatically — there is nothing in the rules to re-derive it from. Use **Promote
+to \<group\>** to restore it, which is the same click that granted it originally.
 
 ### Staff are trusted by definition
 
