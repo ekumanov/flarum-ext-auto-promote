@@ -13,9 +13,11 @@ use Ekumanov\AutoPromote\Api\UserResourceFields;
 use Ekumanov\AutoPromote\Console\PromoteEligibleCommand;
 use Ekumanov\AutoPromote\Listener\PromoteOnApproval;
 use Ekumanov\AutoPromote\Listener\PromoteOnPost;
+use Ekumanov\AutoPromote\Listener\RespectManualGroupChange;
 use Flarum\Api\Resource;
 use Flarum\Extend;
 use Flarum\Post\Event\Posted;
+use Flarum\User\Event\GroupsChanged;
 use Flarum\User\User;
 use Illuminate\Console\Scheduling\Event as ScheduleEvent;
 
@@ -56,7 +58,10 @@ return [
         ->default('ekumanov-auto-promote.age_from_qualifying_post', true),
 
     (new Extend\Event())
-        ->listen(Posted::class, PromoteOnPost::class),
+        ->listen(Posted::class, PromoteOnPost::class)
+        // A moderator removing the trusted group by hand must not be undone by
+        // the next sweep; see the listener for why that means the watchlist.
+        ->listen(GroupsChanged::class, RespectManualGroupChange::class),
 
     // Promotion is otherwise only re-evaluated when a user posts or is approved,
     // so a member who makes their last qualifying post and then goes quiet would

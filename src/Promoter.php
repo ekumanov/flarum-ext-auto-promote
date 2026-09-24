@@ -64,12 +64,17 @@ class Promoter
         return $user->watched_at !== null;
     }
 
-    public function promote(User $user): void
+    /**
+     * Put the user in the trusted group. Returns true only when this call
+     * actually added the membership, so callers can report (or react to) real
+     * promotions rather than attempts.
+     */
+    public function promote(User $user): bool
     {
         $groupId = $this->regularGroupId();
 
         if ($groupId === null || $user->groups->contains('id', $groupId)) {
-            return;
+            return false;
         }
 
         // The setting can outlive the group it points at (an admin deletes the
@@ -77,21 +82,48 @@ class Promoter
         // pivot's foreign key and turn an ordinary reply into a 500, so check
         // first — one indexed lookup, and only on the rare promotion path.
         if (! Group::whereKey($groupId)->exists()) {
-            return;
+            return false;
         }
 
-        $user->groups()->attach($groupId);
+        // One INSERT IGNORE ... SELECT rather than check-then-attach, for two
+        // races the in-memory model cannot see:
+        //
+        // - Two requests evaluating the same user at once (a reply landing
+        //   while the sweep runs, or two approvals in quick succession) would
+        //   both pass the contains() check above and the second attach() would
+        //   hit the group_user primary key — a 500 on an ordinary saved reply.
+        //   The IGNORE makes the loser a no-op instead.
+        // - The sweep loads its candidates up front and can reach a user
+        //   minutes later. If a moderator watched them in between, the stale
+        //   model still says "not watched". Reading watched_at from the row, in
+        //   the same statement that inserts, means a flag that has been written
+        //   always wins; a flag written a moment *after* is covered by demote()
+        //   detaching unconditionally.
+        $inserted = $user->groups()->newPivotStatement()->insertOrIgnoreUsing(
+            ['user_id', 'group_id'],
+            User::query()
+                ->whereKey($user->id)
+                ->whereNull('watched_at')
+                ->select('id')
+                ->selectRaw('? as group_id', [$groupId])
+        );
+
         $user->unsetRelation('groups');
+
+        return $inserted > 0;
     }
 
     public function demote(User $user): void
     {
         $groupId = $this->regularGroupId();
 
-        if ($groupId === null || ! $user->groups->contains('id', $groupId)) {
+        if ($groupId === null) {
             return;
         }
 
+        // Detach unconditionally rather than trusting the loaded relation: the
+        // model may predate a promotion that landed concurrently (see
+        // promote()), and a DELETE that matches nothing costs nothing.
         $user->groups()->detach($groupId);
         $user->unsetRelation('groups');
     }
@@ -121,6 +153,12 @@ class Promoter
             return false;
         }
 
+        // A suspended account is not one to hand more trust to. Once the
+        // suspension lapses the sweep picks them up again like anyone else.
+        if ($this->isSuspended($user)) {
+            return false;
+        }
+
         // Post count first: it is the cheaper check and it short-circuits the
         // large majority of users before the timer query runs at all.
         if ($this->approvedPostCount($user) < $this->requiredPosts()) {
@@ -134,11 +172,46 @@ class Promoter
      * Promote the user if they now meet every requirement. Safe to call as
      * often as we like — it is a no-op for anyone already promoted.
      */
-    public function maybeAutoPromote(User $user): void
+    public function maybeAutoPromote(User $user): bool
     {
-        if ($this->isEligible($user)) {
-            $this->promote($user);
+        return $this->isEligible($user) && $this->promote($user);
+    }
+
+    /**
+     * Whether flarum/suspend is enabled, i.e. whether suspended_until means
+     * anything. The column can outlive a disabled extension, and a leftover
+     * value from back then should not keep holding anyone back.
+     */
+    public function suspensionApplies(): bool
+    {
+        return $this->extensions->isEnabled('flarum-suspend');
+    }
+
+    public function isSuspended(User $user): bool
+    {
+        if (! $this->suspensionApplies() || $user->suspended_until === null) {
+            return false;
         }
+
+        return Carbon::parse($user->suspended_until)->isFuture();
+    }
+
+    /**
+     * The SQL twin of isSuspended(), for the sweep's candidate query — so that
+     * suspended accounts never take up slots in its batch limit.
+     *
+     * @param \Illuminate\Database\Eloquent\Builder<User> $query
+     */
+    public function excludeSuspended($query): void
+    {
+        if (! $this->suspensionApplies()) {
+            return;
+        }
+
+        $query->where(function ($query) {
+            $query->whereNull('suspended_until')
+                ->orWhere('suspended_until', '<=', Carbon::now());
+        });
     }
 
     public function requiredPosts(): int
@@ -242,6 +315,16 @@ class Promoter
         // user_id and would otherwise inflate the count for free.
         $query->where('type', 'comment')
             ->whereNull('hidden_at');
+
+        // A reply stays visible when the discussion around it is hidden, so it
+        // has to be excluded explicitly or a moderator hiding a spam thread
+        // would leave its author credited for every post in it. A correlated
+        // EXISTS on the discussion's primary key rather than a join: it works
+        // unchanged inside the sweep's whereHas('posts') subquery, and it
+        // leaves the unqualified column names above unambiguous.
+        $query->whereHas('discussion', function ($query) {
+            $query->whereNull('discussions.hidden_at');
+        });
 
         // is_approved only exists while flarum/approval is installed.
         if ($this->extensions->isEnabled('flarum-approval')) {

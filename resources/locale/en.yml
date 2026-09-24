@@ -1,5 +1,10 @@
 ekumanov-auto-promote:
 
+  lib:
+    # Stored as the watchlist note when staff untick the trusted group in the
+    # Edit User modal, so the entry explains itself months later.
+    manual_removal_reason: "Removed from {group} by hand — kept out of auto-promotion until taken off the watchlist."
+
   forum:
     user_controls:
       watch_button: Add to watchlist

@@ -49,11 +49,15 @@ class PromoteEligibleCommand extends Command
         $required = $promoter->requiredPosts();
 
         // One query to narrow the field, rather than walking every user on the
-        // forum: not watched, not already trusted, not staff, and holding at
-        // least the required number of qualifying posts. isEligible() then
-        // decides properly per user, including the waiting period.
-        $candidates = User::query()
-            ->whereNull('watched_at')
+        // forum: not watched, not suspended, not already trusted, not staff,
+        // and holding at least the required number of qualifying posts.
+        // isEligible() then decides properly per user, including the waiting
+        // period.
+        $query = User::query()->whereNull('watched_at');
+
+        $promoter->excludeSuspended($query);
+
+        $candidates = $query
             ->whereDoesntHave('groups', function ($query) use ($groupId) {
                 $query->whereIn('groups.id', [
                     $groupId,
@@ -77,10 +81,11 @@ class PromoteEligibleCommand extends Command
                 continue;
             }
 
-            $promoted[] = $user->username;
-
-            if (! $dryRun) {
-                $promoter->promote($user);
+            // promote() reports false when someone else got there first (a
+            // reply promoted them mid-sweep) or a moderator watched them since
+            // the candidates were loaded; neither is a promotion by this run.
+            if ($dryRun || $promoter->promote($user)) {
+                $promoted[] = $user->username;
             }
         }
 

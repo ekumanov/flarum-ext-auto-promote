@@ -80,11 +80,13 @@ A member is promoted when **all** of these hold:
   this extension never moves anyone on its own)
 - they are not on the watchlist
 - they are not staff (see below)
+- they are not currently suspended (when [flarum/suspend](https://github.com/flarum/suspend)
+  is enabled — the sweep picks them up once the suspension ends)
 - they have at least *N* qualifying posts (default 3)
 - the waiting period has elapsed (default 24 hours)
 
 A qualifying post is a **comment** (event posts such as "renamed the discussion"
-do not count), not hidden, and — when [flarum/approval](https://github.com/flarum/approval)
+do not count), not hidden, not in a hidden discussion, and — when [flarum/approval](https://github.com/flarum/approval)
 is enabled — approved.
 
 ### The waiting period starts at the qualifying post
@@ -110,6 +112,22 @@ One case is worth knowing: someone who only ever held the group because a
 moderator granted it *by hand*, before they met the rules, does not get it back
 automatically — there is nothing in the rules to re-derive it from. Use **Promote
 to \<group\>** to restore it, which is the same click that granted it originally.
+
+### Removing the trusted group by hand
+
+Unticking the trusted group in core's **Edit User** modal would otherwise last
+until the next sweep, which would promote the member straight back. So a manual
+removal puts the member on the watchlist, attributed to the moderator who saved
+the modal and with a note saying the group was removed by hand. That is exactly
+what the watchlist already means — never auto-promote this account — and it is
+reversed the same way: **Remove from watchlist** re-evaluates on the spot.
+
+Ticking the trusted group back on in the same modal clears the flag, just as
+**Promote to \<group\>** does.
+
+One consequence: a moderator saving the modal with a stale group list (opened
+before the member was promoted, saved after) removes the group too, and that
+also lands on the watchlist. The badge makes it visible.
 
 ### Staff are trusted by definition
 
